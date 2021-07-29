@@ -12,15 +12,15 @@ import torch.nn as nn
 import torch.optim as optim
 from matplotlib import pyplot as plt
 from torch.autograd import Variable
-from common.avgmeter import *
-from common.logger import Logger
-from common.sync_batchnorm.batchnorm import convert_model
-from common.warmupLR import *
-from tasks.semantic.modules.ioueval import *
-from tasks.semantic.modules.SalsaNext import *
-from tasks.semantic.modules.SalsaNextAdf import *
-from tasks.semantic.modules.Lovasz_Softmax import Lovasz_softmax
-import tasks.semantic.modules.adf as adf
+from train.common.avgmeter import *
+from train.common.logger import Logger
+from train.common.sync_batchnorm.batchnorm import convert_model
+from train.common.warmupLR import *
+from train.tasks.semantic.modules.ioueval import *
+from train.tasks.semantic.modules.SalsaNext import *
+from train.tasks.semantic.modules.SalsaNextAdf import *
+from train.tasks.semantic.modules.Lovasz_Softmax import Lovasz_softmax
+import train.tasks.semantic.modules.adf as adf
 
 def keep_variance_fn(x):
     return x + 1e-3
@@ -573,7 +573,7 @@ class Trainer():
             acc.update(accuracy.item(), in_vol.size(0))
             iou.update(jaccard.item(), in_vol.size(0))
             if self.uncertainty:
-                print('Validation set:\n'       
+                print('Validation set:\n'
                       'Time avg per batch {batch_time.avg:.3f}\n'
                       'Loss avg {loss.avg:.4f}\n'
                       'Jaccard avg {jac.avg:.4f}\n'

@@ -9,8 +9,8 @@ import numpy as np
 import torch
 import __init__ as booger
 
-from tasks.semantic.modules.ioueval import iouEval
-from common.laserscan import SemLaserScan
+from train.tasks.semantic.modules.ioueval import iouEval
+from train.common.laserscan import SemLaserScan
 
 # possible splits
 splits = ['train','valid','test']

@@ -6,8 +6,8 @@ import os
 import yaml
 import __init__ as booger
 
-from common.laserscan import LaserScan, SemLaserScan
-from common.laserscanvis import LaserScanVis
+from train.common.laserscan import LaserScan, SemLaserScan
+from train.common.laserscanvis import LaserScanVis
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("./visualize.py")

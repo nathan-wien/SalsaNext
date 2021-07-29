@@ -2,7 +2,7 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from common.laserscan import LaserScan, SemLaserScan
+from train.common.laserscan import LaserScan, SemLaserScan
 import torchvision
 
 import torch
@@ -22,6 +22,7 @@ import warnings
 
 EXTENSIONS_SCAN = ['.bin']
 EXTENSIONS_LABEL = ['.label']
+
 
 
 def is_scan(filename):

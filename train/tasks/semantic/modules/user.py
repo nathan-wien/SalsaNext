@@ -16,9 +16,9 @@ import cv2
 import os
 import numpy as np
 
-from tasks.semantic.modules.SalsaNext import *
-from tasks.semantic.modules.SalsaNextAdf import *
-from tasks.semantic.postproc.KNN import KNN
+from train.tasks.semantic.modules.SalsaNext import *
+from train.tasks.semantic.modules.SalsaNextAdf import *
+from train.tasks.semantic.postproc.KNN import KNN
 
 
 class User():
