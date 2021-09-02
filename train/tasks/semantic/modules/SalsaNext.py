@@ -1,29 +1,44 @@
 # !/usr/bin/env python3
 # This file is covered by the LICENSE file in the root of this project.
-import imp
-
-import __init__ as booger
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class ResContextBlock(nn.Module):
-    def __init__(self, in_filters, out_filters):
+    def __init__(self, in_channels, out_channels):
         super(ResContextBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_filters, out_filters, kernel_size=(1, 1), stride=1)
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.conv1 = nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=(1, 1),
+            stride=1,
+        )
         self.act1 = nn.LeakyReLU()
 
-        self.conv2 = nn.Conv2d(out_filters, out_filters, (3,3), padding=1)
+        self.conv2 = nn.Conv2d(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            kernel_size=(3, 3),
+            padding=1,
+        )
         self.act2 = nn.LeakyReLU()
-        self.bn1 = nn.BatchNorm2d(out_filters)
+        self.bn1 = nn.BatchNorm2d(self.out_channels)
 
-        self.conv3 = nn.Conv2d(out_filters, out_filters, (3,3),dilation=2, padding=2)
+        self.conv3 = nn.Conv2d(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            kernel_size=(3, 3),
+            dilation=2,
+            padding=2,
+        )
         self.act3 = nn.LeakyReLU()
-        self.bn2 = nn.BatchNorm2d(out_filters)
-
+        self.bn2 = nn.BatchNorm2d(self.out_channels)
 
     def forward(self, x):
-
         shortcut = self.conv1(x)
         shortcut = self.act1(shortcut)
 
@@ -40,29 +55,62 @@ class ResContextBlock(nn.Module):
 
 
 class ResBlock(nn.Module):
-    def __init__(self, in_filters, out_filters, dropout_rate, kernel_size=(3, 3), stride=1,
-                 pooling=True, drop_out=True):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        dropout_rate,
+        kernel_size=(3, 3),
+        stride=1,
+        pooling=True,
+        drop_out=True,
+    ):
         super(ResBlock, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.pooling = pooling
         self.drop_out = drop_out
-        self.conv1 = nn.Conv2d(in_filters, out_filters, kernel_size=(1, 1), stride=stride)
+
+        self.conv1 = nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=(1, 1),
+            stride=stride,
+        )
         self.act1 = nn.LeakyReLU()
 
-        self.conv2 = nn.Conv2d(in_filters, out_filters, kernel_size=(3,3), padding=1)
+        self.conv2 = nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=(3, 3),
+            padding=1,
+        )
         self.act2 = nn.LeakyReLU()
-        self.bn1 = nn.BatchNorm2d(out_filters)
+        self.bn1 = nn.BatchNorm2d(self.out_channels)
 
-        self.conv3 = nn.Conv2d(out_filters, out_filters, kernel_size=(3,3),dilation=2, padding=2)
+        self.conv3 = nn.Conv2d(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            kernel_size=(3, 3),
+            dilation=2,
+            padding=2,
+        )
         self.act3 = nn.LeakyReLU()
-        self.bn2 = nn.BatchNorm2d(out_filters)
+        self.bn2 = nn.BatchNorm2d(self.out_channels)
 
-        self.conv4 = nn.Conv2d(out_filters, out_filters, kernel_size=(2, 2), dilation=2, padding=1)
+        self.conv4 = nn.Conv2d(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            kernel_size=(2, 2),
+            dilation=2,
+            padding=1,
+        )
         self.act4 = nn.LeakyReLU()
-        self.bn3 = nn.BatchNorm2d(out_filters)
+        self.bn3 = nn.BatchNorm2d(self.out_channels)
 
-        self.conv5 = nn.Conv2d(out_filters*3, out_filters, kernel_size=(1, 1))
+        self.conv5 = nn.Conv2d(out_channels * 3, out_channels, kernel_size=(1, 1))
         self.act5 = nn.LeakyReLU()
-        self.bn4 = nn.BatchNorm2d(out_filters)
+        self.bn4 = nn.BatchNorm2d(self.out_channels)
 
         if pooling:
             self.dropout = nn.Dropout2d(p=dropout_rate)
@@ -86,56 +134,70 @@ class ResBlock(nn.Module):
         resA = self.act4(resA)
         resA3 = self.bn3(resA)
 
-        concat = torch.cat((resA1,resA2,resA3),dim=1)
+        concat = torch.cat((resA1, resA2, resA3), dim=1)
         resA = self.conv5(concat)
         resA = self.act5(resA)
         resA = self.bn4(resA)
         resA = shortcut + resA
 
+        if self.drop_out:
+            resB = self.dropout(resA)
+        else:
+            resB = resA
 
         if self.pooling:
-            if self.drop_out:
-                resB = self.dropout(resA)
-            else:
-                resB = resA
             resB = self.pool(resB)
-
             return resB, resA
         else:
-            if self.drop_out:
-                resB = self.dropout(resA)
-            else:
-                resB = resA
             return resB
 
 
 class UpBlock(nn.Module):
-    def __init__(self, in_filters, out_filters, dropout_rate, drop_out=True):
+    def __init__(self, in_channels, out_channels, dropout_rate, drop_out=True):
         super(UpBlock, self).__init__()
         self.drop_out = drop_out
-        self.in_filters = in_filters
-        self.out_filters = out_filters
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         self.dropout1 = nn.Dropout2d(p=dropout_rate)
-
         self.dropout2 = nn.Dropout2d(p=dropout_rate)
 
-        self.conv1 = nn.Conv2d(in_filters//4 + 2*out_filters, out_filters, (3,3), padding=1)
+        self.conv1 = nn.Conv2d(
+            in_channels=self.in_channels // 4 + 2 * self.out_channels,
+            out_channels=self.out_channels,
+            kernel_size=(3, 3),
+            padding=1,
+        )
         self.act1 = nn.LeakyReLU()
-        self.bn1 = nn.BatchNorm2d(out_filters)
+        self.bn1 = nn.BatchNorm2d(self.out_channels)
 
-        self.conv2 = nn.Conv2d(out_filters, out_filters, (3,3),dilation=2, padding=2)
+        self.conv2 = nn.Conv2d(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            kernel_size=(3, 3),
+            dilation=2,
+            padding=2,
+        )
         self.act2 = nn.LeakyReLU()
-        self.bn2 = nn.BatchNorm2d(out_filters)
+        self.bn2 = nn.BatchNorm2d(self.out_channels)
 
-        self.conv3 = nn.Conv2d(out_filters, out_filters, (2,2), dilation=2,padding=1)
+        self.conv3 = nn.Conv2d(
+            in_channels=self.out_channels,
+            out_channels=self.out_channels,
+            kernel_size=(2, 2),
+            dilation=2,
+            padding=1,
+        )
         self.act3 = nn.LeakyReLU()
-        self.bn3 = nn.BatchNorm2d(out_filters)
+        self.bn3 = nn.BatchNorm2d(self.out_channels)
 
-
-        self.conv4 = nn.Conv2d(out_filters*3,out_filters,kernel_size=(1,1))
+        self.conv4 = nn.Conv2d(
+            in_channels=self.out_channels * 3,
+            out_channels=self.out_channels,
+            kernel_size=(1, 1),
+        )
         self.act4 = nn.LeakyReLU()
-        self.bn4 = nn.BatchNorm2d(out_filters)
+        self.bn4 = nn.BatchNorm2d(self.out_channels)
 
         self.dropout3 = nn.Dropout2d(p=dropout_rate)
 
@@ -144,7 +206,7 @@ class UpBlock(nn.Module):
         if self.drop_out:
             upA = self.dropout1(upA)
 
-        upB = torch.cat((upA,skip),dim=1)
+        upB = torch.cat((upA, skip), dim=1)
         if self.drop_out:
             upB = self.dropout2(upB)
 
@@ -160,7 +222,7 @@ class UpBlock(nn.Module):
         upE = self.act3(upE)
         upE3 = self.bn3(upE)
 
-        concat = torch.cat((upE1,upE2,upE3),dim=1)
+        concat = torch.cat((upE1, upE2, upE3), dim=1)
         upE = self.conv4(concat)
         upE = self.act4(upE)
         upE = self.bn4(upE)
@@ -175,22 +237,55 @@ class SalsaNext(nn.Module):
         super(SalsaNext, self).__init__()
         self.nclasses = nclasses
 
-        self.downCntx = ResContextBlock(5, 32)
-        self.downCntx2 = ResContextBlock(32, 32)
-        self.downCntx3 = ResContextBlock(32, 32)
+        self.downCntx = ResContextBlock(in_channels=5, out_channels=32)
+        self.downCntx2 = ResContextBlock(in_channels=32, out_channels=32)
+        self.downCntx3 = ResContextBlock(in_channels=32, out_channels=32)
 
-        self.resBlock1 = ResBlock(32, 2 * 32, 0.2, pooling=True, drop_out=False)
-        self.resBlock2 = ResBlock(2 * 32, 2 * 2 * 32, 0.2, pooling=True)
-        self.resBlock3 = ResBlock(2 * 2 * 32, 2 * 4 * 32, 0.2, pooling=True)
-        self.resBlock4 = ResBlock(2 * 4 * 32, 2 * 4 * 32, 0.2, pooling=True)
-        self.resBlock5 = ResBlock(2 * 4 * 32, 2 * 4 * 32, 0.2, pooling=False)
+        self.resBlock1 = ResBlock(
+            in_channels=32,
+            out_channels=2 * 32,
+            dropout_rate=0.2,
+            pooling=True,
+            drop_out=False,
+        )
+        self.resBlock2 = ResBlock(
+            in_channels=2 * 32, out_channels=2 * 2 * 32, dropout_rate=0.2, pooling=True
+        )
+        self.resBlock3 = ResBlock(
+            in_channels=2 * 2 * 32,
+            out_channels=2 * 4 * 32,
+            dropout_rate=0.2,
+            pooling=True,
+        )
+        self.resBlock4 = ResBlock(
+            in_channels=2 * 4 * 32,
+            out_channels=2 * 4 * 32,
+            dropout_rate=0.2,
+            pooling=True,
+        )
+        self.resBlock5 = ResBlock(
+            in_channels=2 * 4 * 32,
+            out_channels=2 * 4 * 32,
+            dropout_rate=0.2,
+            pooling=False,
+        )
 
-        self.upBlock1 = UpBlock(2 * 4 * 32, 4 * 32, 0.2)
-        self.upBlock2 = UpBlock(4 * 32, 4 * 32, 0.2)
-        self.upBlock3 = UpBlock(4 * 32, 2 * 32, 0.2)
-        self.upBlock4 = UpBlock(2 * 32, 32, 0.2, drop_out=False)
+        self.upBlock1 = UpBlock(
+            in_channels=2 * 4 * 32, out_channels=4 * 32, dropout_rate=0.2
+        )
+        self.upBlock2 = UpBlock(
+            in_channels=4 * 32, out_channels=4 * 32, dropout_rate=0.2
+        )
+        self.upBlock3 = UpBlock(
+            in_channels=4 * 32, out_channels=2 * 32, dropout_rate=0.2
+        )
+        self.upBlock4 = UpBlock(
+            in_channels=2 * 32, out_channels=32, dropout_rate=0.2, drop_out=False
+        )
 
-        self.logits = nn.Conv2d(32, nclasses, kernel_size=(1, 1))
+        self.logits = nn.Conv2d(
+            in_channels=32, out_channels=nclasses, kernel_size=(1, 1)
+        )
 
     def forward(self, x):
         downCntx = self.downCntx(x)
@@ -203,7 +298,7 @@ class SalsaNext(nn.Module):
         down3c, down3b = self.resBlock4(down2c)
         down5c = self.resBlock5(down3c)
 
-        up4e = self.upBlock1(down5c,down3b)
+        up4e = self.upBlock1(down5c, down3b)
         up3e = self.upBlock2(up4e, down2b)
         up2e = self.upBlock3(up3e, down1b)
         up1e = self.upBlock4(up2e, down0b)
