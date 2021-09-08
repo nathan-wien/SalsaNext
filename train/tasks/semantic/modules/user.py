@@ -93,7 +93,7 @@ class User:
     def infer(self):
         cnn = []
         knn = []
-        if self.split == None:
+        if self.split is None:
 
             self.infer_subset(
                 loader=self.parser.get_train_set(),

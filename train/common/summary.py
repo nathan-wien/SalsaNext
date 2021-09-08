@@ -1,4 +1,4 @@
-### https://github.com/sksq96/pytorch-summary/blob/master/torchsummary/torchsummary.py
+# https://github.com/sksq96/pytorch-summary/blob/master/torchsummary/torchsummary.py
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
