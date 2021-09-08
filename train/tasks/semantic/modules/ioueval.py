@@ -13,7 +13,8 @@ class iouEval:
         # if ignore is larger than n_classes, consider no ignoreIndex
         self.ignore = torch.tensor(ignore).long()
         self.include = torch.tensor(
-            [n for n in range(self.n_classes) if n not in self.ignore]).long()
+            [n for n in range(self.n_classes) if n not in self.ignore]
+        ).long()
         print("[IOU EVAL] IGNORE: ", self.ignore)
         print("[IOU EVAL] INCLUDE: ", self.include)
         self.reset()
@@ -23,7 +24,8 @@ class iouEval:
 
     def reset(self):
         self.conf_matrix = torch.zeros(
-            (self.n_classes, self.n_classes), device=self.device).long()
+            (self.n_classes, self.n_classes), device=self.device
+        ).long()
         self.ones = None
         self.last_scan_size = None  # for when variable scan size is used
 
@@ -49,7 +51,8 @@ class iouEval:
 
         # make confusion matrix (cols = gt, rows = pred)
         self.conf_matrix = self.conf_matrix.index_put_(
-            tuple(idxs), self.ones, accumulate=True)
+            tuple(idxs), self.ones, accumulate=True
+        )
 
         # print(self.tp.shape)
         # print(self.fp.shape)

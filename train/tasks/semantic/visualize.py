@@ -4,67 +4,71 @@
 import argparse
 import os
 import yaml
-import __init__ as booger
 
 from common.laserscan import LaserScan, SemLaserScan
 from common.laserscanvis import LaserScanVis
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser("./visualize.py")
     parser.add_argument(
-        '--dataset', '-d',
+        "--dataset",
+        "-d",
         type=str,
         required=True,
-        help='Dataset to visualize. No Default',
+        help="Dataset to visualize. No Default",
     )
     parser.add_argument(
-        '--config', '-c',
+        "--config",
+        "-c",
         type=str,
         required=False,
         default="config/labels/semantic-kitti.yaml",
-        help='Dataset config file. Defaults to %(default)s',
+        help="Dataset config file. Defaults to %(default)s",
     )
     parser.add_argument(
-        '--sequence', '-s',
+        "--sequence",
+        "-s",
         type=str,
         default="00",
         required=False,
-        help='Sequence to visualize. Defaults to %(default)s',
+        help="Sequence to visualize. Defaults to %(default)s",
     )
     parser.add_argument(
-        '--predictions', '-p',
+        "--predictions",
+        "-p",
         type=str,
         default=None,
         required=False,
-        help='Alternate location for labels, to use predictions folder. '
-             'Must point to directory containing the predictions in the proper format '
-             ' (see readme)'
-             'Defaults to %(default)s',
+        help="Alternate location for labels, to use predictions folder. "
+        "Must point to directory containing the predictions in the proper format "
+        " (see readme)"
+        "Defaults to %(default)s",
     )
     parser.add_argument(
-        '--ignore_semantics', '-i',
-        dest='ignore_semantics',
+        "--ignore_semantics",
+        "-i",
+        dest="ignore_semantics",
         default=False,
-        action='store_true',
-        help='Ignore semantics. Visualizes uncolored pointclouds.'
-             'Defaults to %(default)s',
+        action="store_true",
+        help="Ignore semantics. Visualizes uncolored pointclouds."
+        "Defaults to %(default)s",
     )
     parser.add_argument(
-        '--offset',
+        "--offset",
         type=int,
         default=0,
         required=False,
-        help='Sequence to start. Defaults to %(default)s',
+        help="Sequence to start. Defaults to %(default)s",
     )
     parser.add_argument(
-        '--ignore_safety',
-        dest='ignore_safety',
+        "--ignore_safety",
+        dest="ignore_safety",
         default=False,
-        action='store_true',
-        help='Normally you want the number of labels and ptcls to be the same,'
-             ', but if you are not done inferring this is not the case, so this disables'
-             ' that safety.'
-             'Defaults to %(default)s',
+        action="store_true",
+        help="Normally you want the number of labels and ptcls to be the same,"
+        ", but if you are not done inferring this is not the case, so this disables"
+        " that safety."
+        "Defaults to %(default)s",
     )
     FLAGS, unparsed = parser.parse_known_args()
 
@@ -83,18 +87,17 @@ if __name__ == '__main__':
     # open config file
     try:
         print("Opening config file %s" % FLAGS.config)
-        CFG = yaml.safe_load(open(FLAGS.config, 'r'))
+        CFG = yaml.safe_load(open(FLAGS.config, "r"))
     except Exception as e:
         print(e)
         print("Error opening yaml file.")
         quit()
 
     # fix sequence name
-    FLAGS.sequence = '{0:02d}'.format(int(FLAGS.sequence))
+    FLAGS.sequence = "{0:02d}".format(int(FLAGS.sequence))
 
     # does sequence folder exist?
-    scan_paths = os.path.join(FLAGS.dataset, "sequences",
-                              FLAGS.sequence, "velodyne")
+    scan_paths = os.path.join(FLAGS.dataset, "sequences", FLAGS.sequence, "velodyne")
     if os.path.isdir(scan_paths):
         print("Sequence folder exists! Using sequence from %s" % scan_paths)
     else:
@@ -102,31 +105,39 @@ if __name__ == '__main__':
         quit()
 
     # populate the pointclouds
-    scan_names = [os.path.join(dp, f) for dp, dn, fn in os.walk(
-        os.path.expanduser(scan_paths)) for f in fn]
+    scan_names = [
+        os.path.join(dp, f)
+        for dp, dn, fn in os.walk(os.path.expanduser(scan_paths))
+        for f in fn
+    ]
     scan_names.sort()
 
     # does sequence folder exist?
     if not FLAGS.ignore_semantics:
         if FLAGS.predictions is not None:
-            label_paths = os.path.join(FLAGS.predictions, "sequences",
-                                       FLAGS.sequence, "predictions")
+            label_paths = os.path.join(
+                FLAGS.predictions, "sequences", FLAGS.sequence, "predictions"
+            )
         else:
-            label_paths = os.path.join(FLAGS.dataset, "sequences",
-                                       FLAGS.sequence, "labels")
+            label_paths = os.path.join(
+                FLAGS.dataset, "sequences", FLAGS.sequence, "labels"
+            )
         if os.path.isdir(label_paths):
             print("Labels folder exists! Using labels from %s" % label_paths)
         else:
             print("Labels folder doesn't exist! Exiting...")
             quit()
         # populate the pointclouds
-        label_names = [os.path.join(dp, f) for dp, dn, fn in os.walk(
-            os.path.expanduser(label_paths)) for f in fn]
+        label_names = [
+            os.path.join(dp, f)
+            for dp, dn, fn in os.walk(os.path.expanduser(label_paths))
+            for f in fn
+        ]
         label_names.sort()
 
         # check that there are same amount of labels and scans
         if not FLAGS.ignore_safety:
-            assert (len(label_names) == len(scan_names))
+            assert len(label_names) == len(scan_names)
 
     # create a scan
     if FLAGS.ignore_semantics:
@@ -139,12 +150,14 @@ if __name__ == '__main__':
     semantics = not FLAGS.ignore_semantics
     if not semantics:
         label_names = None
-    vis = LaserScanVis(scan=scan,
-                       scan_names=scan_names,
-                       label_names=label_names,
-                       offset=FLAGS.offset,
-                       semantics=semantics,
-                       instances=False)
+    vis = LaserScanVis(
+        scan=scan,
+        scan_names=scan_names,
+        label_names=label_names,
+        offset=FLAGS.offset,
+        semantics=semantics,
+        instances=False,
+    )
 
     # print instructions
     print("To navigate:")
